@@ -1,3 +1,6 @@
 wst
 **/*.local
 .idea
+*key
+*.pub
+authorized_keys
