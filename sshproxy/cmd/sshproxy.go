@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 func main() {
@@ -24,9 +25,23 @@ func main() {
 	backoffDuration := 30 * time.Second
 	// authTimeout := 10 * time.Second // removed unused variable
 
-	// SSH server config with password authentication
+	// Load authorized public keys
+	authKeysBytes, err := os.ReadFile("../test/authorized_keys")
+	if err != nil {
+		log.Fatalf("Failed to load authorized_keys: %v", err)
+	}
+	authorizedKeysMap := map[string]ssh.PublicKey{}
+	for len(authKeysBytes) > 0 {
+		pubKey, _, _, rest, err := ssh.ParseAuthorizedKey(authKeysBytes)
+		if err != nil {
+			break
+		}
+		authorizedKeysMap[string(pubKey.Marshal())] = pubKey
+		authKeysBytes = rest
+	}
+
 	config := &ssh.ServerConfig{
-		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
+		PublicKeyCallback: func(c ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
 			ip := c.RemoteAddr().String()
 			if v, ok := backoff.Load(ip); ok {
 				until := v.(time.Time)
@@ -35,23 +50,19 @@ func main() {
 					return nil, errors.New("unauthorized")
 				}
 			}
-			// Try to parse the password as a PEM private key
-			_, err := ssh.ParsePrivateKey(pass)
-			if err == nil {
-				// Valid private key, allow login
+			if _, ok := authorizedKeysMap[string(pubKey.Marshal())]; ok {
 				return &ssh.Permissions{
-					Extensions: map[string]string{"userkey": string(pass)},
+					Extensions: map[string]string{"userpubkey": string(pubKey.Marshal())},
 				}, nil
 			}
-			// Failed auth: set backoff
 			backoff.Store(ip, time.Now().Add(backoffDuration))
-			log.Printf("Failed authentication for %s, backoff until %v", ip, time.Now().Add(backoffDuration))
+			log.Printf("Failed public key authentication for %s, backoff until %v", ip, time.Now().Add(backoffDuration))
 			return nil, errors.New("unauthorized")
 		},
 	}
-	privateBytes, err := os.ReadFile("sshproxy/cmd/id_rsa")
+	privateBytes, err := os.ReadFile("../test/serverkey")
 	if err != nil {
-		log.Fatalf("Failed to load private key (sshproxy/cmd/id_rsa): %v", err)
+		log.Fatalf("Failed to load private key (serverkey): %v", err)
 	}
 	private, err := ssh.ParsePrivateKey(privateBytes)
 	if err != nil {
@@ -89,16 +100,7 @@ func handleSSHConnection(clientConn net.Conn, targetAddr string, config *ssh.Ser
 	clientConn.SetDeadline(time.Time{})
 	log.Printf("New SSH connection from %s (%s)", sshConn.RemoteAddr(), sshConn.ClientVersion())
 
-	// Extract user's private key from permissions
-	var userKey ssh.Signer
-	if sshConn.Permissions != nil {
-		if keyStr, ok := sshConn.Permissions.Extensions["userkey"]; ok {
-			k, err := ssh.ParsePrivateKey([]byte(keyStr))
-			if err == nil {
-				userKey = k
-			}
-		}
-	}
+	// ...no longer needed: userPubKey extraction...
 
 	// Log global requests
 	go func() {
@@ -120,23 +122,37 @@ func handleSSHConnection(clientConn net.Conn, targetAddr string, config *ssh.Ser
 			continue
 		}
 
-		// Connect to target SSH server using user's key
+		// Connect to target SSH server using agent forwarding
 		var targetClient *ssh.Client
-		if userKey != nil {
+		if sshConn != nil {
+			// Try to connect to the user's SSH agent
+			agentSock := os.Getenv("SSH_AUTH_SOCK")
+			if agentSock == "" {
+				log.Printf("SSH_AUTH_SOCK not set, cannot use agent forwarding.")
+				channel.Close()
+				continue
+			}
+			agentConn, err := net.Dial("unix", agentSock)
+			if err != nil {
+				log.Printf("Failed to connect to SSH agent: %v", err)
+				channel.Close()
+				continue
+			}
+			ag := agent.NewClient(agentConn)
 			targetConfig := &ssh.ClientConfig{
 				User:            sshConn.User(),
-				Auth:            []ssh.AuthMethod{ssh.PublicKeys(userKey)},
+				Auth:            []ssh.AuthMethod{ssh.PublicKeysCallback(ag.Signers)},
 				HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 				Timeout:         10 * time.Second,
 			}
 			targetClient, err = ssh.Dial("tcp", targetAddr, targetConfig)
 			if err != nil {
-				log.Printf("Failed to connect to target %s with user key: %v", targetAddr, err)
+				log.Printf("Failed to connect to target %s with agent forwarding: %v", targetAddr, err)
 				channel.Close()
 				continue
 			}
 		} else {
-			log.Printf("No user key provided, cannot connect to upstream SSH server.")
+			log.Printf("No SSH connection available for agent forwarding.")
 			channel.Close()
 			continue
 		}
