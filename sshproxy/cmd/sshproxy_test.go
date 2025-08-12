@@ -8,18 +8,25 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func TestTCPProxy_RealSSHClient(t *testing.T) {
-	// Start proxy in goroutine
+// Helper to start the proxy for tests
+func startProxy(t *testing.T, listenAddr, targetAddr, logPath string) {
+	os.Setenv("SSHPROXY_AUTH_LOG", logPath)
 	go func() {
-		os.Args = []string{"sshproxy", ":2223", "localhost:2222"}
+		t.Log("start sshproxy")
+		os.Args = []string{"sshproxy", listenAddr, targetAddr}
 		main()
 	}()
 	time.Sleep(1 * time.Second)
+}
+
+func TestSSHProxy_Forwarding(t *testing.T) {
+	// Start proxy (no banning)
+	startProxy(t, ":2245", "localhost:2222", "../test/auth.log")
 
 	// Load private key from test/clientkey
 	key, err := os.ReadFile("../test/clientkey")
 	if err != nil {
-		t.Fatalf("Failed to read client key: %v", err)
+		t.Skip("No test key available for SSH client test")
 	}
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
@@ -34,7 +41,7 @@ func TestTCPProxy_RealSSHClient(t *testing.T) {
 	}
 
 	// Connect to SSH server via proxy
-	client, err := ssh.Dial("tcp", "localhost:2223", config)
+	client, err := ssh.Dial("tcp", "localhost:2245", config)
 	if err != nil {
 		t.Fatalf("Failed to connect to SSH server via proxy: %v", err)
 	}
@@ -55,4 +62,25 @@ func TestTCPProxy_RealSSHClient(t *testing.T) {
 		t.Fatalf("Unexpected output: %q", output)
 	}
 	t.Logf("SSH command output: %q", output)
+}
+
+func TestSSHProxy_Banning(t *testing.T) {
+	// Use a log file with repeated failures from 127.0.0.1
+	banLog := "../test/auth.log"
+	startProxy(t, ":2246", "localhost:2222", banLog)
+
+	// Wait for ban goroutine to process log
+	time.Sleep(2 * time.Second)
+
+	// Try to connect from banned IP using a real SSH client (no keys)
+	config := &ssh.ClientConfig{
+		User:            "root",
+		Auth:            []ssh.AuthMethod{ssh.Password("invalid")},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         5 * time.Second,
+	}
+	_, err := ssh.Dial("tcp", "localhost:2246", config)
+	if err == nil {
+		t.Fatalf("Expected connection to be rejected for banned IP, but SSH client connected successfully")
+	}
 }

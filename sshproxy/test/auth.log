@@ -1,0 +1,11 @@
+Aug 12 12:00:01 localhost sshd[12345]: Accepted publickey for test from 127.0.0.1 port 54321 ssh2: RSA SHA256:examplekey
+Aug 12 12:00:02 localhost sshd[12345]: pam_unix(sshd:session): session opened for user test by (uid=0)
+Aug 12 12:00:03 localhost sshd[12345]: pam_unix(sshd:session): session closed for user test
+Aug 12 12:00:04 localhost sshd[12345]: Failed password for root from 127.0.0.1 port 54322 ssh2
+Aug 12 12:00:05 localhost sshd[12345]: Connection closed by authenticating user test 127.0.0.1 port 54321 [preauth]
+Aug 12 12:00:06 localhost sshd[12345]: error: maximum authentication attempts exceeded for test from 127.0.0.1 port 54323 ssh2 [preauth]
+Aug 12 12:01:01 localhost sshd[12346]: Failed password for root from 127.0.0.1 port 54324 ssh2
+Aug 12 12:01:02 localhost sshd[12347]: Failed password for root from 127.0.0.1 port 54325 ssh2
+Aug 12 12:01:03 localhost sshd[12348]: Failed password for root from 127.0.0.1 port 54326 ssh2
+Aug 12 12:01:04 localhost sshd[12349]: Failed password for root from 127.0.0.1 port 54327 ssh2
+Aug 12 12:01:05 localhost sshd[12350]: Failed password for root from 127.0.0.1 port 54328 ssh2
