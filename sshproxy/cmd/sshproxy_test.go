@@ -21,7 +21,7 @@ func startProxy(t *testing.T, listenAddr, targetAddr, logPath string) {
 
 func TestSSHProxy_Forwarding(t *testing.T) {
 	// Start proxy (no banning)
-	banLog := "../test/auth.log"
+	banLog := "../test/auth_not_banned.log"
 	startProxy(t, ":2245", "localhost:2222", banLog)
 
 	// Load private key from test/clientkey
