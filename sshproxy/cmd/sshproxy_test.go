@@ -82,5 +82,7 @@ func TestSSHProxy_Banning(t *testing.T) {
 	_, err := ssh.Dial("tcp", "localhost:2246", config)
 	if err == nil {
 		t.Fatalf("Expected connection to be rejected for banned IP, but SSH client connected successfully")
+	} else {
+		t.Logf("Connection rejected as expected for banned IP: %v", err)
 	}
 }
