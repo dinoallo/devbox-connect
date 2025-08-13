@@ -73,14 +73,24 @@ func TestSSHProxy_Banning(t *testing.T) {
 	// Wait for ban goroutine to process log
 	time.Sleep(2 * time.Second)
 
-	// Try to connect from banned IP using a real SSH client (no keys)
+	// Try to load private key from test/clientkey and connect from banned IP using a real SSH client
+	key, err := os.ReadFile("../test/clientkey")
+	if err != nil {
+		t.Skip("No test key available for SSH client test")
+	}
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		t.Fatalf("Failed to parse client key: %v", err)
+	}
+
 	config := &ssh.ClientConfig{
 		User:            "root",
-		Auth:            []ssh.AuthMethod{ssh.Password("invalid")},
+		Auth:            []ssh.AuthMethod{ssh.PublicKeys(signer)},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         5 * time.Second,
 	}
-	_, err := ssh.Dial("tcp", "localhost:2246", config)
+
+	_, err = ssh.Dial("tcp", "localhost:2246", config)
 	if err == nil {
 		t.Fatalf("Expected connection to be rejected for banned IP, but SSH client connected successfully")
 	} else {
