@@ -7,14 +7,15 @@ This directory contains the SSH proxy implementation and its tests.
 
 #### Generate Test Logs
 
-To generate `auth_not_banned.log` and `auth.log` for testing, use the provided script:
+To generate `auth_not_banned.log` and `auth.log` for testing, use the provided scripts:
 
+**Go script:**
 ```bash
 cd sshproxy/test
-./gen_auth_logs.sh
+go run get_auth_logs.go
 ```
 
-You can set environment variables to customize the SSH connection:
+You can set environment variables to customize the SSH connection for either script:
 
 - `SSH_HOST` (default: 127.0.0.1)
 - `SSH_PORT` (default: 2222)
@@ -24,7 +25,7 @@ You can set environment variables to customize the SSH connection:
 Example:
 
 ```bash
-SSH_HOST=localhost SSH_PORT=2222 SSH_USER=test SSH_KEY=clientkey ./gen_auth_logs.sh
+SSH_HOST=localhost SSH_PORT=2222 SSH_USER=test SSH_KEY=clientkey go run get_auth_logs.go
 ```
 
 ### Prerequisites
