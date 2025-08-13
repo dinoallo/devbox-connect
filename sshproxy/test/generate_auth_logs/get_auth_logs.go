@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -86,7 +87,8 @@ func writeAuthNotBanned(path, ip string) error {
 		fmt.Sprintf("%s localhost sshd[12345]: Connection closed by authenticating user test %s port 54321 [preauth]", now(), ip),
 		fmt.Sprintf("%s localhost sshd[12345]: error: maximum authentication attempts exceeded for test from %s port 54323 ssh2 [preauth]", now(), ip),
 	}
-	return os.WriteFile(path, []byte(joinLines(lines)), 0644)
+	content := strings.Join(lines, "\n") + "\n"
+	return os.WriteFile(path, []byte(content), 0644)
 }
 
 func writeAuthBanned(path, ip string) error {
@@ -103,9 +105,6 @@ func writeAuthBanned(path, ip string) error {
 		lines = append(lines, fmt.Sprintf("%s localhost sshd[%d]: Failed password for root from %s port %d ssh2",
 			t.Format("Jan 02 15:04:05"), 12346+i, ip, 54324+i))
 	}
-	return os.WriteFile(path, []byte(joinLines(lines)), 0644)
-}
-
-func joinLines(lines []string) string {
-	return fmt.Sprintf("%s\n", string([]byte(fmt.Sprintf("%s", lines))))
+	content := strings.Join(lines, "\n") + "\n"
+	return os.WriteFile(path, []byte(content), 0644)
 }
