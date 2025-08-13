@@ -48,8 +48,15 @@ cd sshproxy
 # Run all tests
 go test ./...
 ```
+### Logging
 
+You can set the log level for `sshproxy` using the `SSHPROXY_LOG_LEVEL` environment variable. Supported levels are `debug`, `info`, `warn`, and `error`. For example:
 
+```bash
+SSHPROXY_LOG_LEVEL=debug ./sshproxy <listen_addr> <target_addr>
+```
+
+If not set, the default log level is `info`.
 
 ### Files
 - `cmd/sshproxy.go`: Main proxy implementation
