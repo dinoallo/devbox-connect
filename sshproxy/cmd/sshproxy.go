@@ -106,6 +106,7 @@ func main() {
 						recent++
 					}
 				}
+				logger.Debug("IP failure count", "ip", ip, "count", recent)
 				if recent >= banThreshold {
 					banList.Ban(ip, banDuration)
 					logger.Info("Banned IP", "ip", ip, "duration", banDuration, "failures", recent)
