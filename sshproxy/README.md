@@ -15,7 +15,7 @@ This directory contains the SSH proxy implementation and its tests.
 cd sshproxy/test
 ssh-keygen -t ed25519 -N "" -f clientkey
 ssh-keygen -t ed25519 -N "" -f serverkey
-echo ./clientkey.pub >> authorized_keys
+cat ./clientkey.pub >> authorized_keys
 ```
 
 #### Set up upstream ssh server for testing
@@ -24,7 +24,7 @@ echo ./clientkey.pub >> authorized_keys
 
 ```bash
 cd sshproxy/test
-echo ./clientkey.pub >> ~/.ssh/authorized_keys # create this file if it doesn't exist
+cat ./clientkey.pub >> ~/.ssh/authorized_keys # create this file if it doesn't exist
 ```
 ##### SSH Server in Docker
 
