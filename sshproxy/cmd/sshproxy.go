@@ -78,7 +78,7 @@ func main() {
 
 	// Start log parser goroutine
 	go func() {
-		failedRegex := regexp.MustCompile(`(?i)Failed password for .* from ([0-9.]+) port`)
+		failedRegex := regexp.MustCompile(`(?i)Failed password for .* from ([0-9.:]+) port`)
 		for {
 			ipFails := make(map[string][]time.Time)
 			f, err := os.Open(logFile)
