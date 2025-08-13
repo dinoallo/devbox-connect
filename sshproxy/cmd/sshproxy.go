@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"io"
-	"log"
+	"log/slog"
 	"net"
 	"os"
 	"regexp"
@@ -42,8 +42,26 @@ func (b *BanList) Cleanup() {
 }
 
 func main() {
+	var logger *slog.Logger
+	{
+		var level slog.Level
+		switch os.Getenv("SSHPROXY_LOG_LEVEL") {
+		case "debug":
+			level = slog.LevelDebug
+		case "info":
+			level = slog.LevelInfo
+		case "warn":
+			level = slog.LevelWarn
+		case "error":
+			level = slog.LevelError
+		default:
+			level = slog.LevelInfo
+		}
+		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+	}
 	if len(os.Args) != 3 {
-		log.Fatalf("Usage: %s <listen_addr> <target_addr>", os.Args[0])
+		logger.Error("Usage error", "listen_addr", os.Args[1], "target_addr", os.Args[2])
+		os.Exit(1)
 	}
 	listenAddr := os.Args[1]
 	targetAddr := os.Args[2]
@@ -65,7 +83,7 @@ func main() {
 			ipFails := make(map[string][]time.Time)
 			f, err := os.Open(logFile)
 			if err != nil {
-				log.Printf("Failed to open log file: %v", err)
+				logger.Error("Failed to open log file", "error", err)
 				time.Sleep(30 * time.Second)
 				continue
 			}
@@ -90,7 +108,7 @@ func main() {
 				}
 				if recent >= banThreshold {
 					banList.Ban(ip, banDuration)
-					log.Printf("Banned IP %s for %v due to %d failures", ip, banDuration, recent)
+					logger.Info("Banned IP", "ip", ip, "duration", banDuration, "failures", recent)
 				}
 			}
 			banList.Cleanup()
@@ -100,37 +118,38 @@ func main() {
 
 	ln, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		log.Fatalf("Failed to listen on %s: %v", listenAddr, err)
+		logger.Error("Failed to listen on", "listen_addr", listenAddr, "error", err)
+		os.Exit(1)
 	}
-	log.Printf("TCP SSH Proxy listening on %s, forwarding to %s", listenAddr, targetAddr)
+	logger.Info("TCP SSH Proxy listening", "listen_addr", listenAddr, "target_addr", targetAddr)
 
 	for {
 		clientConn, err := ln.Accept()
 		if err != nil {
-			log.Printf("Failed to accept connection: %v", err)
+			logger.Error("Failed to accept connection", "error", err)
 			continue
 		}
 		remoteAddr, _, err := net.SplitHostPort(clientConn.RemoteAddr().String())
 		if err != nil {
-			log.Printf("Failed to parse remote address: %v", err)
+			logger.Error("Failed to parse remote address", "error", err)
 			clientConn.Close()
 			continue
 		}
 		if banList.IsBanned(remoteAddr) {
-			log.Printf("Rejected banned IP: %s", remoteAddr)
+			logger.Warn("Rejected banned IP", "ip", remoteAddr)
 			clientConn.Close()
 			continue
 		}
-		go handleTCPProxy(clientConn, targetAddr)
+		go handleTCPProxy(clientConn, targetAddr, logger)
 	}
 }
 
-func handleTCPProxy(clientConn net.Conn, targetAddr string) {
+func handleTCPProxy(clientConn net.Conn, targetAddr string, logger *slog.Logger) {
 	defer clientConn.Close()
 
 	targetConn, err := net.Dial("tcp", targetAddr)
 	if err != nil {
-		log.Printf("Failed to connect to target %s: %v", targetAddr, err)
+		logger.Error("Failed to connect to target", "target", targetAddr, "error", err)
 		return
 	}
 	defer targetConn.Close()
