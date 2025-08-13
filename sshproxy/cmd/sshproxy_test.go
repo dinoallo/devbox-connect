@@ -25,7 +25,8 @@ func TestSSHProxy_Forwarding(t *testing.T) {
 	startProxy(t, ":2245", "localhost:2222", banLog)
 
 	// Load private key from test/clientkey
-	key, err := os.ReadFile("../test/clientkey")
+	clientKey := "../test/clientkey"
+	key, err := os.ReadFile(clientKey)
 	if err != nil {
 		t.Skip("No test key available for SSH client test")
 	}
@@ -74,7 +75,8 @@ func TestSSHProxy_Banning(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// Try to load private key from test/clientkey and connect from banned IP using a real SSH client
-	key, err := os.ReadFile("../test/clientkey")
+	clientKey := "../test/clientkey"
+	key, err := os.ReadFile(clientKey)
 	if err != nil {
 		t.Skip("No test key available for SSH client test")
 	}
