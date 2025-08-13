@@ -11,7 +11,7 @@ To generate `auth_not_banned.log` and `auth.log` for testing, use the provided s
 
 **Go script:**
 ```bash
-cd sshproxy/test
+cd sshproxy/test/generate_auth_logs
 go run get_auth_logs.go
 ```
 
@@ -21,6 +21,7 @@ You can set environment variables to customize the SSH connection for either scr
 - `SSH_PORT` (default: 2222)
 - `SSH_USER` (default: test)
 - `SSH_KEY` (default: clientkey)
+- `LOG_DIR` (default: ..)
 
 Example:
 

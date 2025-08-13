@@ -14,9 +14,9 @@ func main() {
 	sshHost := getenv("SSH_HOST", "127.0.0.1")
 	sshPort := getenv("SSH_PORT", "2222")
 	sshUser := getenv("SSH_USER", "test")
-	sshKey := getenv("SSH_KEY", "../test/clientkey")
+	sshKey := getenv("SSH_KEY", "../clientkey")
+	logDir := getenv("LOG_DIR", "..")
 
-	logDir := filepath.Dir(os.Args[0])
 	logNotBanned := filepath.Join(logDir, "auth_not_banned.log")
 	logBanned := filepath.Join(logDir, "auth.log")
 
