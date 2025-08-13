@@ -4,3 +4,4 @@ wst
 *key
 *.pub
 authorized_keys
+*.log
