@@ -1,5 +1,25 @@
 # sshproxy
 
+## Ban Logic Diagram
+
+```mermaid
+flowchart TD
+	A[Start log parser goroutine] --> B[Open auth log file]
+	B --> C[Scan each line]
+	C --> D{Failed password regex match?}
+	D -- Yes --> E[Extract IP]
+	D -- No --> C
+	E --> F[Record failure timestamp for IP]
+	F --> C
+	C --> G[After scan, for each IP]
+	G --> H{Failures in ban window >= threshold?}
+	H -- Yes --> I[Ban IP for ban duration]
+	H -- No --> J[Do nothing]
+	I --> K[Cleanup expired bans]
+	J --> K
+	K --> L[Sleep and repeat]
+```
+
 ## Testing
 
 This directory contains the SSH proxy implementation and its tests.
