@@ -14,7 +14,7 @@ import (
 func main() {
 	sshHost := getenv("SSH_HOST", "127.0.0.1")
 	sshPort := getenv("SSH_PORT", "2222")
-	sshUser := getenv("SSH_USER", "test")
+	sshUser := getenv("SSH_USER", "root")
 	sshKey := getenv("SSH_KEY", "../clientkey")
 	logDir := getenv("LOG_DIR", "..")
 
