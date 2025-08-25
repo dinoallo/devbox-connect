@@ -15,18 +15,24 @@ cd sshproxy/test/generate_auth_logs
 go run get_auth_logs.go
 ```
 
-You can set environment variables to customize the SSH connection for either script:
+
+You can set environment variables to customize the SSH connection and log generation:
 
 - `SSH_HOST` (default: 127.0.0.1)
 - `SSH_PORT` (default: 2222)
 - `SSH_USER` (default: test)
 - `SSH_KEY` (default: clientkey)
 - `LOG_DIR` (default: ..)
+- `REMOTE_IP` (optional: specify the client IP to use in logs; if unset, the script will auto-detect your local IP)
 
 Example:
 
 ```bash
+# Use auto-detected local IP
 SSH_HOST=localhost SSH_PORT=2222 SSH_USER=test SSH_KEY=clientkey go run get_auth_logs.go
+
+# Specify a custom REMOTE_IP
+REMOTE_IP=192.168.1.100 go run get_auth_logs.go
 ```
 
 ### Prerequisites

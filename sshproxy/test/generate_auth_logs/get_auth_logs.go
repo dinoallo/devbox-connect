@@ -21,22 +21,26 @@ func main() {
 	logNotBanned := filepath.Join(logDir, "auth_not_banned.log")
 	logBanned := filepath.Join(logDir, "auth.log")
 
-	localIP, err := getLocalIP(sshHost, sshPort, sshUser, sshKey)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to get local IP: %v\n", err)
-		os.Exit(1)
+	remoteIP := os.Getenv("REMOTE_IP")
+	if remoteIP == "" {
+		ip, err := getLocalIP(sshHost, sshPort, sshUser, sshKey)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get local IP: %v\n", err)
+			os.Exit(1)
+		}
+		remoteIP = ip
 	}
 
-	if err := writeAuthNotBanned(logNotBanned, localIP); err != nil {
+	if err := writeAuthNotBanned(logNotBanned, remoteIP); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write auth_not_banned.log: %v\n", err)
 		os.Exit(1)
 	}
-	if err := writeAuthBanned(logBanned, localIP); err != nil {
+	if err := writeAuthBanned(logBanned, remoteIP); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write auth.log: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Generated %s and %s with local IP %s\n", logNotBanned, logBanned, localIP)
+	fmt.Printf("Generated %s and %s with REMOTE_IP %s\n", logNotBanned, logBanned, remoteIP)
 }
 
 func getenv(key, def string) string {
